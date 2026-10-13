@@ -135,6 +135,8 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:10px 20px 30px
 .s-count[hidden]{display:none}
 .s-bar{left:130px;top:536px;width:1340px;height:14px;border-radius:7px;background:#F1E7D6;overflow:hidden}
 .s-bar i{display:block;height:100%;width:100%;background:#F4A93C;border-radius:7px;transform-origin:left;transform:scaleX(1)}
+.s-say{left:450px;top:116px;width:700px;height:66px;border-radius:33px;background:#12343B;color:#fff;font-size:34px;font-weight:700;display:grid;place-items:center;letter-spacing:.04em}
+.stage.revealed .s-say{display:none}
 .s-think{left:0;top:500px;width:1600px;text-align:center;font-size:40px;font-weight:700;color:#8A7A61}
 .pad{width:700px;height:240px;border-radius:40px;color:#fff;transition:transform .35s cubic-bezier(.3,1.6,.5,1), opacity .3s, filter .3s, box-shadow .3s}
 .pad.A{background:#028090;box-shadow:0 10px 0 #015A66}
@@ -156,11 +158,12 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:10px 20px 30px
 .stage.win-B .s-card{border-color:#E8552D;background:#FDEEE8}
 .stage.win-A .pad.A .ic svg,.stage.win-B .pad.B .ic svg{animation:var(--anim) .8s ease-in-out infinite}
 .ic[data-i="left"]{--anim:goL}.ic[data-i="right"]{--anim:goR}.ic[data-i="up"]{--anim:goU}.ic[data-i="down"]{--anim:goD}
-.ic[data-i="clap"]{--anim:clap}.ic[data-i="noclap"]{--anim:shake}.ic[data-i="dotA"],.ic[data-i="dotB"]{--anim:pulse}
+.ic[data-i="clap"]{--anim:clap}.ic[data-i="step"]{--anim:stepAnim}.ic[data-i="noclap"]{--anim:shake}.ic[data-i="dotA"],.ic[data-i="dotB"]{--anim:pulse}
 @keyframes goL{0%,100%{transform:translateX(0)}50%{transform:translateX(-34px)}}
 @keyframes goR{0%,100%{transform:translateX(0)}50%{transform:translateX(34px)}}
 @keyframes goU{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
 @keyframes goD{0%,100%{transform:translateY(0)}50%{transform:translateY(30px)}}
+@keyframes stepAnim{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-22px) rotate(-6deg)}75%{transform:translateY(-22px) rotate(6deg)}}
 @keyframes clap{0%,100%{transform:scale(1)}40%{transform:scale(.82)}60%{transform:scale(1.15)}}
 @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
@@ -270,9 +273,12 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:10px 20px 30px
       </div>
       <div class="row">
         <label class="chk"><input type="checkbox" id="sound" checked>播放音效</label>
+        <span class="field" style="display:inline-flex;align-items:center;gap:6px"><label for="say" style="margin:0">長輩先唸出來</label>
+          <select id="say"><option value="off">不用唸</option><option value="tw">用台語唸</option><option value="hk">用客語唸</option><option value="twhk">台語或客語</option></select></span>
         <label class="chk"><input type="checkbox" id="ansPages" checked>PPT／PDF 每題加一頁答案</label>
       </div>
       <p class="hint">「老師按一下」：按一下公布答案，再按一下換下一題。自動倒數時，第一頁規則說明仍需按一下才開始。</p>
+      <p class="hint">長輩先唸出來：每一題畫面上方會提示「大聲用台語唸出來」（或客語），老師等全場唸過那個詞，再請大家做動作；唸詞本身就是口腔與記憶的練習，PPT／PDF 也會印上這句提示。</p>
     </section>
   </div>
 
@@ -320,22 +326,22 @@ footer{text-align:center;color:var(--mute);font-size:14px;padding:10px 20px 30px
 <script id="core">
 /* ---------- data ---------- */
 const THEMES = [
- {id:'eat', a:'能吃', b:'不能吃', act:'walk',
+ {id:'eat', a:'能吃', b:'不能吃', act:'step',
   A:['香蕉','饅頭','白飯','豆花','蘋果','荷包蛋','地瓜','豆漿','包子','西瓜','滷肉飯','鳳梨酥'],
   B:['肥皂','鉛筆','雨傘','拖鞋','牙刷','報紙','石頭','衛生紙','電池','鑰匙','襪子','遙控器']},
  {id:'fly', a:'會飛', b:'不會飛', act:'stand',
   A:['麻雀','蝴蝶','飛機','老鷹','蜜蜂','鴿子','蜻蜓','風箏','直升機','燕子','熱氣球','蚊子'],
   B:['烏龜','大象','腳踏車','金魚','小狗','火車','青蛙','企鵝','蝸牛','鴕鳥','公車','兔子']},
- {id:'fruit', a:'水果', b:'蔬菜', act:'clap',
+ {id:'fruit', a:'水果', b:'蔬菜', act:'step',
   A:['芭樂','芒果','葡萄','橘子','荔枝','木瓜','草莓','蓮霧','龍眼','柚子','奇異果','楊桃'],
   B:['高麗菜','菠菜','紅蘿蔔','茄子','青椒','空心菜','苦瓜','絲瓜','白蘿蔔','洋蔥','地瓜葉','花椰菜']},
- {id:'water', a:'住在水裡', b:'住在陸地', act:'walk',
+ {id:'water', a:'住在水裡', b:'住在陸地', act:'step',
   A:['鯨魚','章魚','鯉魚','螃蟹','海豚','蝦子','鯊魚','水母','吳郭魚','海馬','蛤蜊','魷魚'],
   B:['老虎','長頸鹿','獅子','水牛','猴子','山羊','雞','熊貓','松鼠','斑馬','豬','梅花鹿']},
  {id:'season', a:'夏天用', b:'冬天用', act:'stand',
   A:['電風扇','冷氣','涼蓆','草帽','防曬乳','扇子','冰棒','短褲','蚊帳','涼鞋','遮陽傘','剉冰'],
   B:['暖暖包','圍巾','毛帽','羽絨外套','電暖器','手套','熱水袋','薑母鴨','毛毯','羊肉爐','毛衣','湯圓']},
- {id:'room', a:'廚房', b:'浴室', act:'walk',
+ {id:'room', a:'廚房', b:'浴室', act:'step',
   A:['菜刀','炒鍋','砧板','電鍋','鍋鏟','冰箱','瓦斯爐','碗筷','湯勺','微波爐','抽油煙機','洗碗精'],
   B:['牙刷','浴缸','毛巾','洗髮精','蓮蓬頭','馬桶','沐浴乳','吹風機','刮鬍刀','牙膏','浴巾','洗臉盆']},
  {id:'habit', a:'好習慣', b:'要改掉', act:'clap',
@@ -353,12 +359,12 @@ const THEMES = [
  {id:'temp', a:'熱熱的', b:'冰冰的', act:'clap',
   A:['熱湯','火鍋','熱咖啡','薑母鴨','牛肉麵','熱豆漿','燒仙草','烤地瓜','麻油雞','熱可可','茶葉蛋','藥燉排骨'],
   B:['冰淇淋','剉冰','冰棒','愛玉冰','冰紅茶','涼麵','粉圓冰','冰沙','涼拌小黃瓜','綠豆冰','冰鎮西瓜','冰咖啡']},
- {id:'life', a:'有生命', b:'沒有生命', act:'walk',
+ {id:'life', a:'有生命', b:'沒有生命', act:'step',
   A:['小狗','榕樹','蝴蝶','玫瑰花','金魚','小嬰兒','稻子','螞蟻','青菜','蘑菇','小雞','仙人掌'],
   B:['石頭','杯子','椅子','電視','白雲','鉛筆','枕頭','鬧鐘','書本','玻璃','檯燈','機器人']},
 ];
 const ACTIONS = {
-  walk:{name:'往左走／往右走', a:{t:'往左走',i:'left'}, b:{t:'往右走',i:'right'}},
+  step:{name:'拍拍手／踏踏步', a:{t:'拍拍手',i:'clap'}, b:{t:'踏踏步',i:'step'}},
   stand:{name:'站起來／坐下來', a:{t:'站起來',i:'up'}, b:{t:'坐下來',i:'down'}},
   clap:{name:'拍手／不要拍手', a:{t:'拍手',i:'clap'}, b:{t:'不要拍手',i:'noclap'}},
   custom:{name:'自訂動作', a:{t:'摸摸頭',i:'dotA'}, b:{t:'拍拍腿',i:'dotB'}},
@@ -380,7 +386,6 @@ function getActs(s){
 /* which category sits on the left pad: for walking, the "往左走" side goes left */
 function padOrder(s){
   const acts = getActs(s);
-  if(s.act==='walk' && acts.B.i==='left') return ['B','A'];
   return ['A','B'];
 }
 function wordPx(text){
@@ -410,6 +415,9 @@ function buildDeck(s){
   return out;
 }
 function slideTitle(s){ return `${s.a||'第一類'}還是${s.b||'第二類'}？`; }
+const SAY={tw:'台語',hk:'客語',twhk:'台語或客語'};
+function sayCue(s){ const l=SAY[s.say]; return l?`大聲用${l}唸出來！`:''; }
+function introCue(s){ const l=SAY[s.say]; return l?`看到題目，先用${l}唸出來，再做動作！`:'看到題目，想一想，再做動作！'; }
 
 /* ---------- PPT (editable shapes + text) ---------- */
 function buildPptx(PptxGenJS, s, deck, withAnswers){
@@ -418,7 +426,7 @@ function buildPptx(PptxGenJS, s, deck, withAnswers){
   const IN=v=>v/120, PT=v=>Math.round(v*0.6);
   const F='Microsoft JhengHei';
   const acts=getActs(s), order=padOrder(s);
-  const shapeOf={left:'leftArrow',right:'rightArrow',up:'upArrow',down:'downArrow',clap:'star7',noclap:'noSmoking',dotA:'ellipse',dotB:'ellipse'};
+  const shapeOf={left:'leftArrow',right:'rightArrow',up:'upArrow',down:'downArrow',clap:'star7',step:'ellipse',noclap:'noSmoking',dotA:'ellipse',dotB:'ellipse'};
   function bg(sl){ sl.background={color:COL.paper};
     sl.addShape('ellipse',{x:IN(1460),y:IN(-60),w:IN(220),h:IN(220),fill:{color:COL.amber,transparency:70},line:{type:'none'}});
     sl.addShape('ellipse',{x:IN(-70),y:IN(800),w:IN(180),h:IN(180),fill:{color:COL.A,transparency:80},line:{type:'none'}});
@@ -441,7 +449,7 @@ function buildPptx(PptxGenJS, s, deck, withAnswers){
   // intro
   let sl=pptx.addSlide(); bg(sl);
   sl.addText(slideTitle(s),{x:0,y:IN(110),w:IN(1600),h:IN(160),fontFace:F,fontSize:PT(120),bold:true,color:COL.ink,align:'center',valign:'middle',fit:'shrink'});
-  sl.addText('看到題目，想一想，再做動作！',{x:0,y:IN(290),w:IN(1600),h:IN(90),fontFace:F,fontSize:PT(52),bold:true,color:'5E6F72',align:'center',valign:'middle'});
+  sl.addText(introCue(s),{x:0,y:IN(290),w:IN(1600),h:IN(90),fontFace:F,fontSize:PT(52),bold:true,color:'5E6F72',align:'center',valign:'middle'});
   pads(sl,G.introPadY,G.introPadH,null);
   sl.addText('設計者｜愛迪樂 鍾孟修 職能治療師',{x:0,y:IN(840),w:IN(1600),h:IN(44),fontFace:F,fontSize:PT(28),color:'8A7A61',align:'center'});
   // questions
@@ -456,6 +464,10 @@ function buildPptx(PptxGenJS, s, deck, withAnswers){
         fill:{color: reveal?(q.cat==='A'?'EAF7F8':'FDEEE8'):'FFFFFF'},
         line:{color: reveal?COL[q.cat]:COL.line, width:5}});
       sl.addText(q.text,{x:IN(c.x+40),y:IN(c.y+(reveal?90:20)),w:IN(c.w-80),h:IN(c.h-(reveal?110:40)),fontFace:F,fontSize:PT(wordPx(q.text)*(reveal?.76:1)),bold:true,color:COL.ink,align:'center',valign:'middle',fit:'shrink'});
+      if(!reveal && sayCue(s)){
+        sl.addShape('roundRect',{x:IN(450),y:IN(116),w:IN(700),h:IN(66),fill:{color:COL.ink},rectRadius:0.5,line:{type:'none'}});
+        sl.addText(sayCue(s),{x:IN(450),y:IN(116),w:IN(700),h:IN(66),fontFace:F,fontSize:PT(34),bold:true,color:'FFFFFF',align:'center',valign:'middle',margin:0,fit:'shrink'});
+      }
       if(reveal){
         const lab=`${q.cat==='A'?s.a:s.b}！${getActs(s)[q.cat].t}`;
         sl.addShape('roundRect',{x:IN(500),y:IN(112),w:IN(600),h:IN(84),fill:{color:COL.amber},rectRadius:0.4,line:{type:'none'},rotate:-3});
@@ -479,9 +491,10 @@ if(typeof module!=='undefined') module.exports={THEMES,ACTIONS,buildDeck,buildPp
 /* ---------- state ---------- */
 const KEY='fenyifen-v1';
 const defaults=()=>{const t=THEMES[0];return {theme:t.id,a:t.a,b:t.b,A:t.A.slice(),B:t.B.slice(),act:t.act,swap:false,cusA:'摸摸頭',cusB:'拍拍腿',
-  count:'12',maxRun:'2',mode:'manual',think:'5',hold:'3',sound:true,ansPages:true};};
+  count:'12',maxRun:'2',mode:'manual',think:'5',hold:'3',sound:true,ansPages:true,say:'tw'};};
 let S=defaults();
 try{const saved=JSON.parse(localStorage.getItem(KEY)||'null'); if(saved) S=Object.assign(defaults(),saved);}catch(e){}
+if(S.act==='walk') S.act='step';
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 let DECK=buildDeck(S);
 const $=id=>document.getElementById(id);
@@ -494,6 +507,7 @@ function iconSVG(i){
   if(i in rot) return `<svg viewBox="0 0 100 100"><g transform="rotate(${rot[i]} 50 50)">${arrow}</g></svg>`;
   const palms='<rect x="20" y="24" width="28" height="60" rx="14" fill="#fff" transform="rotate(-16 34 54)"/><rect x="52" y="24" width="28" height="60" rx="14" fill="#fff" transform="rotate(16 66 54)"/>';
   if(i==='clap') return `<svg viewBox="0 0 100 100">${palms}<g stroke="#fff" stroke-width="6" stroke-linecap="round"><path d="M50 4 V14"/><path d="M28 8 L33 17"/><path d="M72 8 L67 17"/></g></svg>`;
+  if(i==='step') return '<svg viewBox="0 0 100 100"><g fill="#fff"><ellipse cx="32" cy="58" rx="13" ry="24" transform="rotate(-12 32 58)"/><ellipse cx="26" cy="26" rx="5" ry="6"/><ellipse cx="37" cy="24" rx="4" ry="5"/><ellipse cx="46" cy="28" rx="3.5" ry="4.5"/><ellipse cx="68" cy="68" rx="13" ry="24" transform="rotate(12 68 68)"/><ellipse cx="74" cy="36" rx="5" ry="6"/><ellipse cx="63" cy="34" rx="4" ry="5"/><ellipse cx="54" cy="38" rx="3.5" ry="4.5"/></g></svg>';
   if(i==='noclap') return `<svg viewBox="0 0 100 100"><g opacity=".55">${palms}</g><circle cx="50" cy="52" r="42" fill="none" stroke="#fff" stroke-width="9"/><path d="M21 23 L79 81" stroke="#fff" stroke-width="9" stroke-linecap="round"/></svg>`;
   if(i==='dotA') return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#fff"/><circle cx="50" cy="50" r="16" fill="#028090"/></svg>';
   return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#fff"/><circle cx="50" cy="50" r="16" fill="#E8552D"/></svg>';
@@ -510,7 +524,7 @@ function padsHTML(y,h){
 }
 function slideHTML(spec){
   if(spec.type==='intro') return BG_SVG+`<div class="abs s-big">${esc(slideTitle(S))}</div>
-    <div class="abs s-sub">看到題目，想一想，再做動作！</div>${padsHTML(G.introPadY,G.introPadH)}
+    <div class="abs s-sub">${esc(introCue(S))}</div>${padsHTML(G.introPadY,G.introPadH)}
     <div class="abs s-credit">設計者｜愛迪樂 鍾孟修 職能治療師</div>`;
   if(spec.type==='end') return BG_SVG+`<div class="abs s-big" style="top:220px;font-size:180px;color:#E8552D">全部完成！</div>
     <div class="abs s-sub" style="top:490px;font-size:64px;color:#12343B">一共 ${DECK.length} 題，大家給自己拍拍手</div>
@@ -522,6 +536,7 @@ function slideHTML(spec){
    <div class="abs s-count" hidden></div>
    <div class="abs s-bar" hidden><i></i></div>
    <div class="abs s-think" hidden>想一想，做動作！</div>
+   ${sayCue(S)?`<div class="abs s-say">${esc(sayCue(S))}</div>`:''}
    <div class="abs s-stamp"><span>${esc(q.cat==='A'?S.a:S.b)}！${esc(acts[q.cat].t)}</span></div>
    ${padsHTML(G.pad.y,G.pad.h)}`;
 }
@@ -551,7 +566,7 @@ function renderActs(){
 function syncInputs(){
   $('catA').value=S.a; $('catB').value=S.b; $('cusA').value=S.cusA; $('cusB').value=S.cusB;
   $('listA').value=S.A.join('\n'); $('listB').value=S.B.join('\n');
-  ['count','maxRun','mode','think','hold'].forEach(k=>$(k).value=S[k]);
+  ['count','maxRun','mode','think','hold','say'].forEach(k=>$(k).value=S[k]);
   $('sound').checked=S.sound; $('ansPages').checked=S.ansPages;
 }
 function renderLabels(){
@@ -595,6 +610,7 @@ let listT;
 }));
 ['count','maxRun'].forEach(k=>$(k).onchange=e=>{S[k]=e.target.value; refresh(true);});
 ['mode','think','hold'].forEach(k=>$(k).onchange=e=>{S[k]=e.target.value; persist();});
+$('say').onchange=e=>{S.say=e.target.value; persist(); renderPreview();};
 $('sound').onchange=e=>{S.sound=e.target.checked; persist();};
 $('ansPages').onchange=e=>{S.ansPages=e.target.checked; persist();};
 $('reshuffle').onclick=()=>refresh(true);
@@ -631,6 +647,7 @@ const SFX={
   down:()=>tone(880,.45,'triangle',.25,.3,260),
   clap:()=>{[.3,.55,.8].forEach(d=>noise(.12,d,.6,900));},
   noclap:()=>{tone(220,.2,'square',.08,.3);tone(220,.3,'square',.08,.55);},
+  step:()=>{[.3,.6].forEach(d=>{tone(110,.14,'sine',.5,d,70);noise(.08,d,.35,300);});},
   dotA:()=>tone(660,.25,'sine',.25,.3,880), dotB:()=>tone(660,.25,'sine',.25,.3,520),
   start:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.18,'triangle',.22,i*.11));},
   end:()=>{[523,659,784,1046,784,1046].forEach((f,i)=>tone(f,.22,'triangle',.22,i*.13)); [1,1.2,1.4,1.6,1.8,2].forEach(d=>noise(.1,d,.5,900));}
@@ -754,6 +771,10 @@ function drawIcon(ctx,i,x,y,sz,alpha){
   const k=sz/100; ctx.scale(k,k);
   const rot={right:0,left:Math.PI,up:-Math.PI/2,down:Math.PI/2};
   if(i in rot){ctx.rotate(rot[i]); ctx.beginPath(); ctx.moveTo(-42,-14);ctx.lineTo(6,-14);ctx.lineTo(6,-38);ctx.lineTo(44,0);ctx.lineTo(6,38);ctx.lineTo(6,14);ctx.lineTo(-42,14);ctx.closePath();ctx.fill();}
+  else if(i==='step'){
+    const foot=(cx,cy,a)=>{ctx.save();ctx.translate(cx,cy);ctx.rotate(a);ctx.beginPath();ctx.ellipse(0,8,13,24,0,0,Math.PI*2);ctx.fill();[[-6,-24,5,6],[5,-26,4,5],[14,-22,3.5,4.5]].forEach(t=>{ctx.beginPath();ctx.ellipse(t[0],t[1],t[2],t[3],0,0,Math.PI*2);ctx.fill();});ctx.restore();};
+    foot(-18,0,-.2); foot(18,10,.2);
+  }
   else if(i==='clap'||i==='noclap'){
     const palm=(a,dx)=>{ctx.save();ctx.translate(dx,4);ctx.rotate(a);rr(ctx,-14,-30,28,60,14);ctx.fill();ctx.restore();};
     ctx.save(); if(i==='noclap') ctx.globalAlpha*=.55; palm(-.28,-16); palm(.28,16); ctx.restore();
@@ -784,7 +805,7 @@ function center(ctx,text,y,size,weight,color){ctx.fillStyle=color;ctx.textAlign=
 function drawSlide(ctx,spec,reveal){
   drawBg(ctx);
   if(spec.type==='intro'){
-    center(ctx,slideTitle(S),190,120,900,'#12343B'); center(ctx,'看到題目，想一想，再做動作！',335,52,700,'#5E6F72');
+    center(ctx,slideTitle(S),190,120,900,'#12343B'); center(ctx,introCue(S),335,52,700,'#5E6F72');
     drawPads(ctx,G.introPadY,G.introPadH,null); center(ctx,'設計者｜愛迪樂 鍾孟修 職能治療師',860,28,500,'#8A7A61'); return;
   }
   if(spec.type==='end'){
@@ -799,6 +820,7 @@ function drawSlide(ctx,spec,reveal){
   ctx.fillStyle=reveal?(q.cat==='A'?'#EAF7F8':'#FDEEE8'):'#fff'; ctx.fill();
   ctx.lineWidth=6; ctx.strokeStyle=reveal?(q.cat==='A'?'#028090':'#E8552D'):'#E6D9C3'; ctx.stroke();
   const ws=fitText(ctx,q.text,Math.round(wordPx(q.text)*(reveal?.76:1)),900,1340); ctx.fillStyle='#12343B'; ctx.font=`900 ${ws}px ${FONT}`; ctx.fillText(q.text,800,c.y+c.h/2+ws*0.04+(reveal?46:0));
+  if(!reveal && sayCue(S)){ ctx.fillStyle='#12343B'; rr(ctx,450,116,700,66,33); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font=`700 34px ${FONT}`; ctx.fillText(sayCue(S),800,150); }
   if(reveal){
     const lab=`${q.cat==='A'?S.a:S.b}！${getActs(S)[q.cat].t}`;
     ctx.save(); ctx.translate(800,154); ctx.rotate(-3*Math.PI/180);
